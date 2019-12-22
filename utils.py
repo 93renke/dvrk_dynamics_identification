@@ -1,11 +1,11 @@
 import sympy
 import numpy as np
+import pandas as pd
 import cloudpickle as pickle
 import os.path
 import os
 import errno
 import csv
-
 
 def new_sym(name):
     return sympy.symbols(name, real=True)
@@ -149,7 +149,41 @@ def save_csv_data(folder, name, data):
     with open(folder + name + '.csv', 'wb') as myfile:
         wr = csv.writer(myfile, quoting=csv.QUOTE_NONE)
         for i in range(np.size(data, 0) - 10):
-            wr.writerow(data[i])
+            wr.writerow(np.squeeze(np.asarray(data[i])))
+
+def save_csv_dr_trajectory(folder, name, t, q, qd):
+    with open(folder + name + '.csv', 'wb') as myfile:
+        for i in range(np.shape(q)[0]):
+            myfile.write("\n")
+            for j in range(np.shape(q)[1]):
+                myfile.write("%f," % q[i,j])
+            myfile.write("\n")
+            for j in range(np.shape(qd)[1]):
+                myfile.write("%f," % qd[i,j])
+            myfile.write("\n")
+            myfile.write("\n")
+            myfile.write("\n")
+            myfile.write("%f" % t[i])
+
+def load_dr_trajectory_data(filename):
+    f = np.array(pd.read_csv(filename, sep=',', header=None))
+
+    data_field_num = 4
+    point_num = np.shape(f)[0] / data_field_num
+
+    q = np.zeros((point_num, np.shape(f)[1]))
+    qd = np.zeros((point_num, np.shape(f)[1]))
+    qdd = np.zeros((point_num, np.shape(f)[1]))
+
+    for i in range(point_num/4):
+      n = i * data_field_num
+      q[i, :]   = f[n, :]
+      qd[i, :]  = f[n + 1, :]
+      qdd[i, :] = f[n + 2, :]
+
+    return q, qd, qdd
+
+
 
 def load_data(folder, name):
     model_file = folder + name + '.pkl'

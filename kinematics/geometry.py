@@ -42,10 +42,11 @@ class Geometry:
             if num == 0:
                 self.T_0n[num] = self.rbt_df.dh_T[num]
                 continue
-            self.T_0n[num] = self.T_0n[self.rbt_df.prev_link_num[num]] * self.rbt_df.dh_T[num]
+            self.T_0n[num] = sympy.simplify(self.T_0n[self.rbt_df.prev_link_num[num]] * self.rbt_df.dh_T[num])
             self.R[num] = self.T_0n[num][0:3, 0:3]
-            self.p_n[num] = self.T_0n[num][0:3, 3]
+            self.p_n[num] = sympy.simplify(self.T_0n[num][0:3, 3])
             self.T_0nc[num] = sympy.sympify(self.T_0n[num] * tranlation_transfmat(self.rbt_df.r_by_ml[num]))
+            self.T_0nc[num] = sympy.simplify(self.T_0nc[num])
             vprint('pos_c{}'.format(num))
             self.p_c[num] = self.T_0nc[num][0:3, 3]
             vprint('v_cw{}'.format(num))
@@ -81,8 +82,8 @@ class Geometry:
         for num in range(self.rbt_df.frame_num):
             self.p_n_func[num] = sympy.lambdify(input_vars, self.p_n[num])
 
-    def draw_geom(self, angle=0):
-        frame_drawer = FrameDrawer((-0.6, 0.6), (-0.4, 0.4), (-0.7, 0.7))
+    def draw_geom(self, angle=0 , x_lim = (-0.6, 0.6), y_lim = (-0.4, 0.4), z_lim = (-0.7, 0.7)):
+        frame_drawer = FrameDrawer(x_lim, y_lim, z_lim)
 
         if angle == 0:
             subs_q2zero = [(q, angle) for q in self.rbt_df.coordinates]

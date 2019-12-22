@@ -74,6 +74,18 @@ class TrajOptimizer:
         self.H = np.zeros((self._dyn.dof * sample_num, self._dyn.base_num))
         self.H_norm = np.zeros((self._dyn.dof * sample_num, self._dyn.base_num))
 
+    def eval_obj_func(self, q, dq, ddq):
+      sample_num = q.shape[0]
+      W = np.zeros((self._dyn.dof * sample_num, self._dyn.base_num))
+
+      for n in range(sample_num):
+          vars_input = q[n, :].tolist() + dq[n, :].tolist() + ddq[n, :].tolist()
+          W[n*self._dyn.dof:(n+1)*self._dyn.dof, :] = self._dyn.H_b_func(*vars_input)
+      W /= np.subtract(W.max(axis=0), W.min(axis=0))
+      f = np.linalg.cond(W)
+
+      return f
+
     def _obj_func(self, x):
         # objective
         q, dq, ddq = self.fourier_traj.fourier_base_x2q(x)
@@ -84,7 +96,7 @@ class TrajOptimizer:
         for n in range(self.sample_num):
             vars_input = q[n, :].tolist() + dq[n, :].tolist() + ddq[n, :].tolist()
             self.H[n*self._dyn.dof:(n+1)*self._dyn.dof, :] = self._dyn.H_b_func(*vars_input)
-
+            #print(np.shape(self.H))
         #print('H: ', self.H[n*self._dyn.dof:(n+1)*self._dyn.dof, :])
         self.H /= np.subtract(self.H.max(axis=0), self.H.min(axis=0))
 
@@ -230,8 +242,11 @@ class TrajOptimizer:
         # SLSQP
         slsqp = pyOpt.pySLSQP.SLSQP()
         slsqp.setOption('IPRINT', 0)
-        # slsqp.setOption('MAXIT', 300)
-        #slsqp.setOption('ACC', 0.00001)
+        # max_it = 3
+        # print(max_it)
+        # slsqp.setOption('MAXIT', max_it)
+        #slsqp.setOption('ACC', 0.1)
+        #slsqp.setOption('ACC', 0.1)
 
         # SOLVOPT
         # slsqp = pyOpt.pySOLVOPT.SOLVOPT()

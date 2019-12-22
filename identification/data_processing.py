@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from utils import ml2r, Lmr2I, inertia_vec2tensor, inertia_tensor2vec
 import sympy
 
-# the format of file should be q0, tau0, q1, tau1, ..., qn, taun
+# the format of file should be q0, dq0, tau0, q1, dq1, tau1, ..., qn, dqn, taun
 def load_trajectory_data(file, freq):
     f = np.array(pd.read_csv(file, sep=',', header=None))
     row, col = f.shape
@@ -199,18 +199,10 @@ def diff_and_filt_data(dof, h, t, q_raw, dq_raw, tau_raw, fc_q, fc_tau, fc_dq, f
     print('q_raw shape: {}'.format(q_raw.shape))
     for i in range(dof):
         q[:, i] = butter_filtfilt(filter_order, wc_q[i], q_raw[:, i])
-
-        # joint_i_dq_raw = central_diff(q_raw[:, i], h, 2)
-        # dq[:, i] = butter_filtfilt(filter_order, wc_dq, joint_i_dq_raw)
-        dq[:, i] = butter_filtfilt(filter_order, wc_dq[i], dq_raw[:, i])
-
-        # joint_i_ddq_raw = central_diff(joint_i_dq_raw, h, 2)
-        joint_i_ddq_raw = central_diff(dq_raw[:, i], h, 2)
-        ddq[:, i] = butter_filtfilt(filter_order, wc_ddq[i], joint_i_ddq_raw)
-        # ddq[:,i] = central_diff( central_diff(q[:,i],h,2) ,h,2)
+        dq[:, i] = butter_filtfilt(filter_order, wc_dq[i], central_diff(q_raw[:, i], h, 2))
+        ddq[:, i] = butter_filtfilt(filter_order, wc_ddq[i], central_diff(central_diff(q_raw[:, i], h, 2) ,h,2))
 
         tau[:, i] = butter_filtfilt(filter_order, wc_tau[i], tau_raw[:, i])
-        # tau[:,i] = butter_lfilter( 3, wc_tau, tau_raw[:,i] )
 
     return t[cut_num:-cut_num],\
            q[cut_num:-cut_num, :], dq[cut_num:-cut_num, :], ddq[cut_num:-cut_num, :], tau[cut_num:-cut_num, :],\

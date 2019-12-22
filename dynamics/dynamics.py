@@ -30,7 +30,7 @@ class Dynamics:
         return sympy.Matrix(L - m * vec2so3(r).transpose() * vec2so3(r))
 
     def _calc_dyn(self):
-        print("Calculating Lagrangian...")
+        print("Calculating Lagrangian... with")
         # Calculate kinetic energy and potential energy
         p_e = 0
         k_e = 0
@@ -68,14 +68,23 @@ class Dynamics:
 
             tau.append(sympy.expand(dk_ddq_dt - dL_dq))
 
+        print("simplifying link inertia tau")
+        tau = sympy.simplify(tau)
+        print("simplifying link inertia tau done")
+
         print("Adding frictions and springs...")
         tau = copy.deepcopy(tau)
 
+        use_vel_squared = True
         for i in range(self.rbt_def.frame_num):
             dq = self.rbt_def.dq_for_frame[i]
 
             if self.rbt_def.use_friction[i]:
-                tau_f = sympy.sign(dq) * self.rbt_def.Fc[i] + dq * self.rbt_def.Fv[i] + self.rbt_def.Fo[i]
+                if use_vel_squared:
+                  print("Using viscous friction times velocity squared...")
+                  tau_f = sympy.sign(dq) * self.rbt_def.Fc[i] + sympy.sign(dq) * dq * dq * self.rbt_def.Fv[i] + self.rbt_def.Fo[i]
+                else:
+                  tau_f = sympy.sign(dq) * self.rbt_def.Fc[i] + dq * self.rbt_def.Fv[i] + self.rbt_def.Fo[i]
                 for a in range(len(self.rbt_def.d_coordinates)):
                     dq_da = sympy.diff(dq, self.rbt_def.d_coordinates[a])
                     tau[a] += dq_da * tau_f
@@ -108,6 +117,10 @@ class Dynamics:
         #     for a in range(len(self.rbt_def.d_coordinates)):
         #         dq_da = sympy.diff(dq_dst, self.rbt_def.d_coordinates[a])
         #         tau_c[a] += dq_da * k * tau_csf[src_index]
+
+        print("simplifying all tau")
+        tau = sympy.simplify(tau)
+        print("simplifying all tau done")
 
         self.tau = tau
 
